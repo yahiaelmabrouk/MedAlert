@@ -1,0 +1,125 @@
+{
+  "_comment": "Curated drug interactions database. Each entry lists two drugs (lowercase generic names) and the severity/description of their interaction. Severity: 'severe', 'moderate', 'mild'.",
+  "interactions": [
+    {
+      "drug_a": "warfarin",
+      "drug_b": "aspirin",
+      "severity": "severe",
+      "description": "Combining warfarin and aspirin sharply increases the risk of serious bleeding. Avoid unless prescribed together by a doctor."
+    },
+    {
+      "drug_a": "warfarin",
+      "drug_b": "ibuprofen",
+      "severity": "severe",
+      "description": "Ibuprofen can increase the bleeding risk of warfarin. Use paracetamol instead when possible."
+    },
+    {
+      "drug_a": "ibuprofen",
+      "drug_b": "aspirin",
+      "severity": "moderate",
+      "description": "Taking ibuprofen with aspirin may reduce the cardioprotective effect of aspirin and increase stomach bleeding."
+    },
+    {
+      "drug_a": "paracetamol",
+      "drug_b": "alcohol",
+      "severity": "moderate",
+      "description": "Combining paracetamol (acetaminophen) with alcohol increases the risk of liver damage."
+    },
+    {
+      "drug_a": "metformin",
+      "drug_b": "alcohol",
+      "severity": "moderate",
+      "description": "Drinking alcohol while taking metformin increases the risk of lactic acidosis and hypoglycemia."
+    },
+    {
+      "drug_a": "amoxicillin",
+      "drug_b": "methotrexate",
+      "severity": "severe",
+      "description": "Amoxicillin can raise methotrexate levels and increase its toxicity."
+    },
+    {
+      "drug_a": "ciprofloxacin",
+      "drug_b": "ibuprofen",
+      "severity": "moderate",
+      "description": "Increases the risk of central nervous system stimulation and seizures."
+    },
+    {
+      "drug_a": "simvastatin",
+      "drug_b": "amlodipine",
+      "severity": "moderate",
+      "description": "Amlodipine increases simvastatin blood levels — keep simvastatin dose at 20 mg or below."
+    },
+    {
+      "drug_a": "simvastatin",
+      "drug_b": "clarithromycin",
+      "severity": "severe",
+      "description": "Clarithromycin can dramatically raise simvastatin levels, causing muscle damage (rhabdomyolysis)."
+    },
+    {
+      "drug_a": "lisinopril",
+      "drug_b": "ibuprofen",
+      "severity": "moderate",
+      "description": "Ibuprofen reduces the blood-pressure-lowering effect of lisinopril and may harm kidney function."
+    },
+    {
+      "drug_a": "lisinopril",
+      "drug_b": "potassium",
+      "severity": "moderate",
+      "description": "Both raise potassium levels — combining them risks dangerous hyperkalemia."
+    },
+    {
+      "drug_a": "fluoxetine",
+      "drug_b": "tramadol",
+      "severity": "severe",
+      "description": "Risk of serotonin syndrome — a potentially life-threatening reaction."
+    },
+    {
+      "drug_a": "fluoxetine",
+      "drug_b": "ibuprofen",
+      "severity": "moderate",
+      "description": "SSRIs combined with NSAIDs increase the risk of gastrointestinal bleeding."
+    },
+    {
+      "drug_a": "sertraline",
+      "drug_b": "tramadol",
+      "severity": "severe",
+      "description": "Risk of serotonin syndrome. Monitor for agitation, fever, and rapid heart rate."
+    },
+    {
+      "drug_a": "omeprazole",
+      "drug_b": "clopidogrel",
+      "severity": "moderate",
+      "description": "Omeprazole may reduce the effectiveness of clopidogrel."
+    },
+    {
+      "drug_a": "digoxin",
+      "drug_b": "amiodarone",
+      "severity": "severe",
+      "description": "Amiodarone increases digoxin levels — risk of toxicity. Reduce digoxin dose."
+    },
+    {
+      "drug_a": "metoprolol",
+      "drug_b": "verapamil",
+      "severity": "severe",
+      "description": "Both slow the heart — combining them can cause severe bradycardia or heart block."
+    },
+    {
+      "drug_a": "doxycycline",
+      "drug_b": "calcium",
+      "severity": "mild",
+      "description": "Calcium reduces doxycycline absorption. Separate doses by at least 2 hours."
+    },
+    {
+      "drug_a": "levothyroxine",
+      "drug_b": "calcium",
+      "severity": "mild",
+      "description": "Calcium reduces levothyroxine absorption. Take at least 4 hours apart."
+    },
+    {
+      "drug_a": "levothyroxine",
+      "drug_b": "omeprazole",
+      "severity": "mild",
+      "description": "Omeprazole may reduce absorption of levothyroxine."
+    }
+  ]
+}
