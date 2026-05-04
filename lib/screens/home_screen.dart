@@ -9,6 +9,7 @@ import '../widgets/medication_card.dart';
 import 'add_medication_screen.dart';
 import 'medication_detail_screen.dart';
 import 'interactions_screen.dart';
+import 'check_interaction_screen.dart';
 
 /// First screen the user sees: the list of their medications.
 class HomeScreen extends StatefulWidget {
@@ -77,6 +78,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openCheckInteraction() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CheckInteractionScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -90,6 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(child: _buildHeader(theme)),
+                    SliverToBoxAdapter(
+                        child: _buildCheckInteractionTile(theme)),
                     if (_interactions.isNotEmpty)
                       SliverToBoxAdapter(child: _buildInteractionBanner(theme)),
                     if (_meds.isEmpty)
@@ -145,6 +157,64 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCheckInteractionTile(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: _openCheckInteraction,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.shield_outlined,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Check Interaction',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      Text(
+                        'Compare any two medications instantly',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer
+                              .withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

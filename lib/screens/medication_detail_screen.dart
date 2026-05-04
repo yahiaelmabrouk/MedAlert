@@ -171,7 +171,7 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
         decoration: BoxDecoration(
           color: isError
               ? theme.colorScheme.errorContainer
-              : theme.colorScheme.surfaceVariant,
+              : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(text),

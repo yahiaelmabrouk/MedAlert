@@ -217,7 +217,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -232,9 +232,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 ? Text('Generic: ${r.genericName}')
                 : null,
             onTap: () {
-              _nameCtrl.text = r.genericName.isNotEmpty
-                  ? r.genericName
-                  : display;
+              _nameCtrl.text =
+                  r.genericName.isNotEmpty ? r.genericName : display;
               _onNameChanged(_nameCtrl.text);
               setState(() => _results = []);
             },

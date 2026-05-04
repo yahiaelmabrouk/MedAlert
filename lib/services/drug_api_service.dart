@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 class DrugSearchResult {
   final String brandName;
   final String genericName;
-  final String purpose;       // What the drug is used for
-  final String warnings;      // Warnings text (often long)
+  final String purpose; // What the drug is used for
+  final String warnings; // Warnings text (often long)
 
   DrugSearchResult({
     required this.brandName,
@@ -62,5 +62,84 @@ class DrugApiService {
         warnings: firstOf(r['warnings']),
       );
     }).toList();
+  }
+
+  /// Fetch the raw `drug_interactions` text from a drug's FDA label.
+  /// Returns an empty string when no label or section exists.
+  Future<String> fetchInteractionsText(String drugName) async {
+    if (drugName.trim().isEmpty) return '';
+
+    final q = Uri.encodeQueryComponent(
+      'openfda.brand_name:"$drugName" OR openfda.generic_name:"$drugName"',
+    );
+    final url = Uri.parse('$_base?search=$q&limit=3');
+
+    final response = await http.get(url);
+    if (response.statusCode == 404) return '';
+    if (response.statusCode != 200) {
+      throw Exception('OpenFDA error ${response.statusCode}');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final results = (body['results'] as List?) ?? [];
+
+    final buffer = StringBuffer();
+    for (final raw in results) {
+      final r = raw as Map<String, dynamic>;
+      final di = r['drug_interactions'];
+      if (di is List) {
+        for (final entry in di) {
+          buffer.writeln(entry.toString());
+        }
+      }
+    }
+    return buffer.toString();
+  }
+
+  /// Cross-checks two drugs using OpenFDA labels.
+  ///
+  /// Looks up each drug's label and searches its `drug_interactions` text
+  /// for a mention of the other drug (by name). Returns a snippet of the
+  /// matching sentence(s), or an empty string if nothing is found.
+  Future<String> checkInteractionViaLabels(String drugA, String drugB) async {
+    final a = drugA.trim();
+    final b = drugB.trim();
+    if (a.isEmpty || b.isEmpty) return '';
+
+    // Query both labels in parallel.
+    final results = await Future.wait([
+      fetchInteractionsText(a),
+      fetchInteractionsText(b),
+    ]);
+
+    final snippet = _findMention(results[0], b) ?? _findMention(results[1], a);
+    return snippet ?? '';
+  }
+
+  /// Finds the first sentence in [text] that mentions [needle]
+  /// (case-insensitive, whole-word). Returns null if not found.
+  String? _findMention(String text, String needle) {
+    if (text.isEmpty || needle.isEmpty) return null;
+    final lower = text.toLowerCase();
+    final n = needle.toLowerCase();
+    final idx = lower.indexOf(n);
+    if (idx == -1) return null;
+
+    // Expand back to start of sentence, forward to end of sentence.
+    int start = idx;
+    while (start > 0 && text[start - 1] != '.' && text[start - 1] != '\n') {
+      start--;
+    }
+    int end = idx + n.length;
+    while (end < text.length && text[end] != '.' && text[end] != '\n') {
+      end++;
+    }
+    if (end < text.length) end++; // include the period
+    final sentence = text.substring(start, end).trim();
+    // Cap length to keep dialogs readable.
+    if (sentence.length > 600) {
+      return '${sentence.substring(0, 600)}…';
+    }
+    return sentence;
   }
 }

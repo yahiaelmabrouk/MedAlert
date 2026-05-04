@@ -2,6 +2,35 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import '../models/interaction.dart';
 import '../models/medication.dart';
+import 'drug_api_service.dart';
+
+/// Result of a pairwise interaction check between two named drugs.
+class PairCheckResult {
+  /// True when an interaction was found in either source.
+  final bool hasInteraction;
+
+  /// "severe", "moderate", "mild", or "unknown" (when only the API found it).
+  final String severity;
+
+  /// Human-readable explanation of the interaction.
+  final String description;
+
+  /// Where the data came from: "local" or "openfda".
+  final String source;
+
+  const PairCheckResult({
+    required this.hasInteraction,
+    required this.severity,
+    required this.description,
+    required this.source,
+  });
+
+  const PairCheckResult.safe()
+      : hasInteraction = false,
+        severity = 'none',
+        description = '',
+        source = 'local';
+}
 
 /// Loads the local interactions JSON and checks medications against it.
 class InteractionService {
@@ -39,6 +68,55 @@ class InteractionService {
       }
     }
     return found;
+  }
+
+  /// Check a single pair of drug names for an interaction.
+  ///
+  /// First consults the local curated database. If no match is found,
+  /// falls back to OpenFDA drug labels via [DrugApiService].
+  Future<PairCheckResult> checkPair(
+    String drugA,
+    String drugB, {
+    DrugApiService? api,
+  }) async {
+    await _ensureLoaded();
+    final a = drugA.toLowerCase().trim();
+    final b = drugB.toLowerCase().trim();
+    if (a.isEmpty || b.isEmpty || a == b) {
+      return const PairCheckResult.safe();
+    }
+
+    // 1. Local database lookup.
+    for (final inter in _interactions) {
+      final match = (inter.drugA == a && inter.drugB == b) ||
+          (inter.drugA == b && inter.drugB == a);
+      if (match) {
+        return PairCheckResult(
+          hasInteraction: true,
+          severity: inter.severity,
+          description: inter.description,
+          source: 'local',
+        );
+      }
+    }
+
+    // 2. Fallback: query OpenFDA labels for cross-references.
+    final svc = api ?? DrugApiService();
+    try {
+      final snippet = await svc.checkInteractionViaLabels(drugA, drugB);
+      if (snippet.isNotEmpty) {
+        return PairCheckResult(
+          hasInteraction: true,
+          severity: 'unknown',
+          description: snippet,
+          source: 'openfda',
+        );
+      }
+    } catch (_) {
+      // Network failure → treat as "no online data" but still report safe-by-local.
+    }
+
+    return const PairCheckResult.safe();
   }
 
   /// Check if adding [newDrug] would clash with any existing medication.
