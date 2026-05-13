@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/providers.dart';
 import '../services/interaction_service.dart';
 import '../widgets/severity_chip.dart';
 
-/// Lets the user type two medication names and checks whether they interact.
-///
-/// Uses the local curated database first, then falls back to the OpenFDA
-/// drug-labels API for unknown pairs. Result is shown as a popup dialog.
-class CheckInteractionScreen extends StatefulWidget {
+class CheckInteractionScreen extends ConsumerStatefulWidget {
   const CheckInteractionScreen({super.key});
 
   @override
-  State<CheckInteractionScreen> createState() => _CheckInteractionScreenState();
+  ConsumerState<CheckInteractionScreen> createState() =>
+      _CheckInteractionScreenState();
 }
 
-class _CheckInteractionScreenState extends State<CheckInteractionScreen> {
+class _CheckInteractionScreenState
+    extends ConsumerState<CheckInteractionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _drugACtrl = TextEditingController();
   final _drugBCtrl = TextEditingController();
-  final _service = InteractionService();
 
   bool _checking = false;
 
@@ -45,7 +44,8 @@ class _CheckInteractionScreenState extends State<CheckInteractionScreen> {
 
     setState(() => _checking = true);
     try {
-      final result = await _service.checkPair(a, b);
+      final result =
+          await ref.read(interactionServiceProvider).checkPair(a, b);
       if (!mounted) return;
       _showResultDialog(a, b, result);
     } catch (e) {
@@ -88,7 +88,6 @@ class _CheckInteractionScreenState extends State<CheckInteractionScreen> {
       return;
     }
 
-    // Color cue based on severity.
     final color = switch (result.severity) {
       'severe' => const Color(0xFFB3261E),
       'moderate' => const Color(0xFFE08600),
@@ -234,13 +233,15 @@ class _CheckInteractionScreenState extends State<CheckInteractionScreen> {
                           ),
                         )
                       : const Icon(Icons.shield_outlined),
-                  label: Text(_checking ? 'Checking…' : 'Check Interaction'),
+                  label:
+                      Text(_checking ? 'Checking…' : 'Check Interaction'),
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+                    color: theme.colorScheme.primaryContainer
+                        .withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(

@@ -28,6 +28,12 @@ dependencies:
   # Material 3 Google fonts for nicer typography
   google_fonts: ^6.2.1
 
+  # Riverpod for state management
+  flutter_riverpod: ^2.5.1
+
+  # Google Sign-In (SSO)
+  google_sign_in: ^6.2.1
+
 dev_dependencies:
   flutter_lints: ^3.0.0
 

@@ -1,24 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'providers/providers.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 import 'services/notification_service.dart';
 
-/// Application entry point.
 Future<void> main() async {
-  // Required because we do async work (notifications) before runApp.
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize the local notification system.
   await NotificationService().init();
 
-  runApp(const MedReminderApp());
+  // Read login state from disk before the app starts so AuthGate
+  // never needs a loading/async state — it always has the correct value.
+  final prefs = await SharedPreferences.getInstance();
+  final isLoggedIn = prefs.getBool('auth_logged_in') ?? false;
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        authStateProvider.overrideWith((ref) => isLoggedIn),
+      ],
+      child: const MedReminderApp(),
+    ),
+  );
 }
 
 class MedReminderApp extends StatelessWidget {
   const MedReminderApp({super.key});
 
-  // Brand color for our Material 3 theme — a calming medical teal.
   static const _seed = Color(0xFF00897B);
 
   @override
@@ -66,7 +77,18 @@ class MedReminderApp extends StatelessWidget {
           shape: StadiumBorder(),
         ),
       ),
-      home: const HomeScreen(),
+      home: const AuthGate(),
     );
+  }
+}
+
+// Watches a plain bool — no async, no loading state.
+class AuthGate extends ConsumerWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLoggedIn = ref.watch(authStateProvider);
+    return isLoggedIn ? const HomeScreen() : const LoginScreen();
   }
 }

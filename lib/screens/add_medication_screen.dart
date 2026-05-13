@@ -1,27 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/medication.dart';
 import '../models/interaction.dart';
+import '../models/medication.dart';
+import '../providers/providers.dart';
 import '../services/drug_api_service.dart';
-import '../services/medication_service.dart';
-import '../services/interaction_service.dart';
-import '../services/notification_service.dart';
 import '../widgets/severity_chip.dart';
 
-/// Form screen to add a new medication.
-///
-/// Lets the user search OpenFDA to autofill the name, set a dosage and
-/// reminder time, and warns about interactions before saving.
-class AddMedicationScreen extends StatefulWidget {
-  final List<Medication> existing;
-  const AddMedicationScreen({super.key, required this.existing});
+class AddMedicationScreen extends ConsumerStatefulWidget {
+  const AddMedicationScreen({super.key});
 
   @override
-  State<AddMedicationScreen> createState() => _AddMedicationScreenState();
+  ConsumerState<AddMedicationScreen> createState() =>
+      _AddMedicationScreenState();
 }
 
-class _AddMedicationScreenState extends State<AddMedicationScreen> {
+class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _dosageCtrl = TextEditingController();
@@ -29,14 +24,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
 
-  // OpenFDA search state
-  final _api = DrugApiService();
   Timer? _debounce;
   bool _searching = false;
   List<DrugSearchResult> _results = [];
-
-  // Interaction warning shown live as user types the name
-  final _interactionService = InteractionService();
   List<Interaction> _liveInteractions = [];
 
   @override
@@ -48,27 +38,25 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     super.dispose();
   }
 
-  /// Called every time the name field changes. We debounce by 400ms so we
-  /// don't hammer the API while the user is still typing.
   void _onNameChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () async {
-      // Live interaction check
-      final inter = await _interactionService.checkAgainstExisting(
-        value,
-        widget.existing,
-      );
+      final existing =
+          ref.read(medicationsProvider).valueOrNull ?? [];
+      final inter = await ref
+          .read(interactionServiceProvider)
+          .checkAgainstExisting(value, existing);
       if (!mounted) return;
       setState(() => _liveInteractions = inter);
 
-      // OpenFDA search
       if (value.trim().length < 3) {
         setState(() => _results = []);
         return;
       }
       setState(() => _searching = true);
       try {
-        final found = await _api.search(value);
+        final found =
+            await ref.read(drugApiServiceProvider).search(value);
         if (!mounted) return;
         setState(() {
           _results = found;
@@ -85,10 +73,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _time,
-    );
+    final picked =
+        await showTimePicker(context: context, initialTime: _time);
     if (picked != null) setState(() => _time = picked);
   }
 
@@ -104,8 +90,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       notes: _notesCtrl.text.trim(),
     );
 
-    await MedicationService().add(med);
-    await NotificationService().scheduleDaily(med);
+    await ref.read(medicationsProvider.notifier).addMedication(med);
 
     if (!mounted) return;
     Navigator.pop(context, true);
@@ -116,15 +101,12 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Medication'),
-      ),
+      appBar: AppBar(title: const Text('Add Medication')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            // -------- NAME (with OpenFDA suggestions) --------
             TextFormField(
               controller: _nameCtrl,
               decoration: InputDecoration(
@@ -137,7 +119,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                         child: SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child:
+                              CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
                     : null,
@@ -147,16 +130,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
               onChanged: _onNameChanged,
             ),
-
-            // OpenFDA search results
             if (_results.isNotEmpty) _buildSearchResults(theme),
-
-            // Live interaction warning
             if (_liveInteractions.isNotEmpty) _buildLiveWarning(theme),
-
             const SizedBox(height: 16),
-
-            // -------- DOSAGE --------
             TextFormField(
               controller: _dosageCtrl,
               decoration: const InputDecoration(
@@ -166,10 +142,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // -------- TIME --------
             InkWell(
               onTap: _pickTime,
               borderRadius: BorderRadius.circular(8),
@@ -182,10 +155,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 child: Text(_time.format(context)),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // -------- NOTES --------
             TextFormField(
               controller: _notesCtrl,
               maxLines: 3,
@@ -196,9 +166,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 alignLabelWithHint: true,
               ),
             ),
-
             const SizedBox(height: 32),
-
             FilledButton.icon(
               onPressed: _save,
               icon: const Icon(Icons.save_rounded),
@@ -217,7 +185,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+        color: theme.colorScheme.surfaceContainerHighest
+            .withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -228,9 +197,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           return ListTile(
             leading: const Icon(Icons.search_rounded),
             title: Text(display),
-            subtitle: r.genericName.isNotEmpty && r.genericName != display
-                ? Text('Generic: ${r.genericName}')
-                : null,
+            subtitle:
+                r.genericName.isNotEmpty && r.genericName != display
+                    ? Text('Generic: ${r.genericName}')
+                    : null,
             onTap: () {
               _nameCtrl.text =
                   r.genericName.isNotEmpty ? r.genericName : display;
@@ -256,7 +226,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Color(0xFFB3261E)),
+              Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFB3261E)),
               SizedBox(width: 8),
               Text(
                 'Possible interaction',
@@ -279,7 +250,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   Expanded(
                     child: Text(
                       'With ${i.drugA == _nameCtrl.text.toLowerCase() ? i.drugB : i.drugA}: ${i.description}',
-                      style: const TextStyle(color: Color(0xFFB3261E)),
+                      style:
+                          const TextStyle(color: Color(0xFFB3261E)),
                     ),
                   ),
                 ],

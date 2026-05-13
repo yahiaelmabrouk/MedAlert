@@ -1,61 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/interaction.dart';
+import '../providers/providers.dart';
 import '../widgets/severity_chip.dart';
 
-/// Lists every detected interaction between the user's medications.
-class InteractionsScreen extends StatelessWidget {
-  final List<Interaction> interactions;
-  const InteractionsScreen({super.key, required this.interactions});
+class InteractionsScreen extends ConsumerWidget {
+  const InteractionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final interactionsAsync = ref.watch(interactionsProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Drug Interactions')),
-      body: interactions.isEmpty
-          ? _buildEmpty(theme)
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: interactions.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final i = interactions[index];
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
+      body: interactionsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (interactions) => interactions.isEmpty
+            ? _buildEmpty(theme)
+            : ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: interactions.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final i = interactions[index];
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${_capitalize(i.drugA)}  ↔  ${_capitalize(i.drugB)}',
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${_capitalize(i.drugA)}  ↔  ${_capitalize(i.drugB)}',
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
                             ),
-                          ),
-                          SeverityChip(severity: i.severity),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        i.description,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                            SeverityChip(severity: i.severity),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          i.description,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
     );
   }
 
@@ -69,7 +73,7 @@ class InteractionsScreen extends StatelessWidget {
             Icon(
               Icons.verified_rounded,
               size: 96,
-              color: theme.colorScheme.primary.withOpacity(0.5),
+              color: theme.colorScheme.primary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(

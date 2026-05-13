@@ -1,149 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/medication.dart';
-import '../models/interaction.dart';
-import '../services/medication_service.dart';
-import '../services/interaction_service.dart';
-import '../services/notification_service.dart';
+import '../providers/providers.dart';
 import '../widgets/medication_card.dart';
+import 'login_screen.dart';
 import 'add_medication_screen.dart';
-import 'medication_detail_screen.dart';
-import 'interactions_screen.dart';
 import 'check_interaction_screen.dart';
+import 'interactions_screen.dart';
+import 'medication_detail_screen.dart';
 
-/// First screen the user sees: the list of their medications.
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final _medService = MedicationService();
-  final _interactionService = InteractionService();
-
-  List<Medication> _meds = [];
-  List<Interaction> _interactions = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEverything();
-  }
-
-  Future<void> _loadEverything() async {
-    setState(() => _loading = true);
-    final meds = await _medService.loadAll();
-    final interactions = await _interactionService.findInteractions(meds);
-    setState(() {
-      _meds = meds;
-      _interactions = interactions;
-      _loading = false;
-    });
-  }
-
-  Future<void> _deleteMed(Medication med) async {
-    await _medService.remove(med.id);
-    await NotificationService().cancel(med);
-    await _loadEverything();
-  }
-
-  Future<void> _openAddScreen() async {
-    final added = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddMedicationScreen(existing: _meds),
-      ),
-    );
-    if (added == true) await _loadEverything();
-  }
-
-  void _openDetail(Medication med) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MedicationDetailScreen(med: med),
-      ),
-    );
-  }
-
-  void _openInteractions() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => InteractionsScreen(interactions: _interactions),
-      ),
-    );
-  }
-
-  void _openCheckInteraction() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CheckInteractionScreen(),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final medsAsync = ref.watch(medicationsProvider);
+    final interactionsAsync = ref.watch(interactionsProvider);
     final theme = Theme.of(context);
 
+    final userName = ref.watch(currentUserNameProvider).valueOrNull;
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('MedReminder'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Sign out',
+            onPressed: () async {
+              await ref.read(authServiceProvider).logout();
+              ref.read(authStateProvider.notifier).state = false;
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _loadEverything,
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader(theme)),
+        child: medsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error loading medications: $e')),
+          data: (meds) {
+            final interactions = interactionsAsync.valueOrNull ?? [];
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(medicationsProvider);
+                await ref.read(medicationsProvider.future);
+              },
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: _buildHeader(theme, meds.length, userName)),
+                  SliverToBoxAdapter(
+                      child: _buildCheckInteractionTile(context, theme)),
+                  if (interactions.isNotEmpty)
                     SliverToBoxAdapter(
-                        child: _buildCheckInteractionTile(theme)),
-                    if (_interactions.isNotEmpty)
-                      SliverToBoxAdapter(child: _buildInteractionBanner(theme)),
-                    if (_meds.isEmpty)
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _buildEmptyState(theme),
-                      )
-                    else
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final med = _meds[index];
-                            return MedicationCard(
-                              med: med,
-                              onTap: () => _openDetail(med),
-                              onDelete: () => _confirmDelete(med),
-                            );
-                          },
-                          childCount: _meds.length,
-                        ),
+                      child: _buildInteractionBanner(
+                          context, ref, theme, interactions.length),
+                    ),
+                  if (meds.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmptyState(theme),
+                    )
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final med = meds[index];
+                          return MedicationCard(
+                            med: med,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    MedicationDetailScreen(med: med),
+                              ),
+                            ),
+                            onDelete: () =>
+                                _confirmDelete(context, ref, med),
+                          );
+                        },
+                        childCount: meds.length,
                       ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
-                ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                ],
               ),
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddScreen,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddMedicationScreen()),
+        ),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add Medication'),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, int count, String? userName) {
+    final greeting = userName != null ? 'Hello, $userName' : 'MedReminder';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'MedReminder',
+            greeting,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -151,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'You have ${_meds.length} medication${_meds.length == 1 ? '' : 's'}',
+            'You have $count medication${count == 1 ? '' : 's'}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -161,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCheckInteractionTile(ThemeData theme) {
+  Widget _buildCheckInteractionTile(BuildContext context, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Material(
@@ -169,7 +140,11 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: _openCheckInteraction,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const CheckInteractionScreen()),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -201,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Compare any two medications instantly',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer
-                              .withOpacity(0.8),
+                              .withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -219,8 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildInteractionBanner(ThemeData theme) {
-    final count = _interactions.length;
+  Widget _buildInteractionBanner(
+      BuildContext context, WidgetRef ref, ThemeData theme, int count) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Material(
@@ -228,7 +203,10 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: _openInteractions,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const InteractionsScreen()),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -273,13 +251,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Icon(
             Icons.medication_outlined,
             size: 96,
-            color: theme.colorScheme.primary.withOpacity(0.4),
+            color: theme.colorScheme.primary.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 16),
-          Text(
-            'No medications yet',
-            style: theme.textTheme.titleLarge,
-          ),
+          Text('No medications yet', style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             'Tap "Add Medication" to start tracking your treatments and detect interactions automatically.',
@@ -293,7 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _confirmDelete(Medication med) async {
+  Future<void> _confirmDelete(
+      BuildContext context, WidgetRef ref, Medication med) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -311,6 +287,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-    if (ok == true) await _deleteMed(med);
+    if (ok == true) {
+      await ref.read(medicationsProvider.notifier).removeMedication(med);
+    }
   }
 }
