@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/interaction.dart';
-import '../models/medication.dart';
-import '../services/auth_service.dart';
-import '../services/google_auth_service.dart';
-import '../services/drug_api_service.dart';
-import '../services/interaction_service.dart';
-import '../services/medication_service.dart';
-import '../services/notification_service.dart';
+import 'package:medreminder/models/interaction.dart';
+import 'package:medreminder/models/medication.dart';
+import 'package:medreminder/features/auth/services/auth_service.dart';
+import 'package:medreminder/features/auth/services/google_auth_service.dart';
+import 'package:medreminder/features/interactions/services/drug_api_service.dart';
+import 'package:medreminder/features/interactions/services/interaction_service.dart';
+import 'package:medreminder/features/medications/services/medication_service.dart';
+import 'package:medreminder/features/medications/services/notification_service.dart';
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 

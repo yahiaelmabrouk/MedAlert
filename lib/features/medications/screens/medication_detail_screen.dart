@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/medication.dart';
-import '../providers/providers.dart';
+import 'package:medreminder/models/medication.dart';
+import 'package:medreminder/core/providers/providers.dart';
+import 'package:medreminder/features/interactions/services/drug_api_service.dart';
 
 class MedicationDetailScreen extends ConsumerWidget {
   final Medication med;
@@ -78,8 +79,11 @@ class MedicationDetailScreen extends ConsumerWidget {
               padding: EdgeInsets.all(24),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (_, __) =>
-                _infoBox(theme, 'Could not reach OpenFDA', isError: true),
+            error: (err, __) => _infoBox(
+              theme,
+              err is NetworkException ? err.message : 'Could not reach OpenFDA',
+              isError: true,
+            ),
             data: (info) {
               if (info == null) {
                 return _infoBox(

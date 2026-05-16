@@ -1,5 +1,18 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+
+/// Thrown when an OpenFDA request fails for a reason the user can act on
+/// (no internet, request timed out, server error). Carries a friendly
+/// [message] safe to show directly in the UI.
+class NetworkException implements Exception {
+  final String message;
+  const NetworkException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 /// A simple result coming back from the OpenFDA search.
 class DrugSearchResult {
@@ -23,6 +36,29 @@ class DrugSearchResult {
 class DrugApiService {
   static const String _base = 'https://api.fda.gov/drug/label.json';
 
+  /// How long to wait for OpenFDA before giving up.
+  static const Duration _timeout = Duration(seconds: 10);
+
+  /// Performs a GET with a timeout and converts low-level network failures
+  /// into a [NetworkException] carrying a user-friendly message.
+  Future<http.Response> _get(Uri url) async {
+    try {
+      return await http.get(url).timeout(_timeout);
+    } on TimeoutException {
+      throw const NetworkException(
+        'The request took too long. Check your connection and try again.',
+      );
+    } on SocketException {
+      throw const NetworkException(
+        'No internet connection. Please check your network and try again.',
+      );
+    } on http.ClientException {
+      throw const NetworkException(
+        'Could not reach the drug database. Please try again.',
+      );
+    }
+  }
+
   /// Search for a drug by name (brand or generic).
   /// Returns up to [limit] results.
   Future<List<DrugSearchResult>> search(String query, {int limit = 5}) async {
@@ -35,12 +71,15 @@ class DrugApiService {
     );
     final url = Uri.parse('$_base?search=$q&limit=$limit');
 
-    final response = await http.get(url);
+    final response = await _get(url);
 
     // OpenFDA returns 404 when nothing matched — treat that as "no results".
     if (response.statusCode == 404) return [];
     if (response.statusCode != 200) {
-      throw Exception('OpenFDA error ${response.statusCode}');
+      throw NetworkException(
+        'The drug database is unavailable right now (error '
+        '${response.statusCode}). Please try again later.',
+      );
     }
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -74,10 +113,13 @@ class DrugApiService {
     );
     final url = Uri.parse('$_base?search=$q&limit=3');
 
-    final response = await http.get(url);
+    final response = await _get(url);
     if (response.statusCode == 404) return '';
     if (response.statusCode != 200) {
-      throw Exception('OpenFDA error ${response.statusCode}');
+      throw NetworkException(
+        'The drug database is unavailable right now (error '
+        '${response.statusCode}). Please try again later.',
+      );
     }
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;

@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../models/medication.dart';
+import 'package:medreminder/models/medication.dart';
 
 /// Handles all things related to local (on-device) notifications.
 ///

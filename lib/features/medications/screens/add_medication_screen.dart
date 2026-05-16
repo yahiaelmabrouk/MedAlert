@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/interaction.dart';
-import '../models/medication.dart';
-import '../providers/providers.dart';
-import '../services/drug_api_service.dart';
-import '../widgets/severity_chip.dart';
+import 'package:medreminder/models/interaction.dart';
+import 'package:medreminder/models/medication.dart';
+import 'package:medreminder/core/providers/providers.dart';
+import 'package:medreminder/features/interactions/services/drug_api_service.dart';
+import 'package:medreminder/widgets/severity_chip.dart';
 
 class AddMedicationScreen extends ConsumerStatefulWidget {
   const AddMedicationScreen({super.key});

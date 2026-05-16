@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/medication.dart';
+import 'package:medreminder/models/medication.dart';
 
 /// A nice rounded card showing a medication summary.
 class MedicationCard extends StatelessWidget {

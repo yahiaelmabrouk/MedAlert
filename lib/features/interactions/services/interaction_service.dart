@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
-import '../models/interaction.dart';
-import '../models/medication.dart';
+import 'package:medreminder/models/interaction.dart';
+import 'package:medreminder/models/medication.dart';
 import 'drug_api_service.dart';
 
 /// Result of a pairwise interaction check between two named drugs.

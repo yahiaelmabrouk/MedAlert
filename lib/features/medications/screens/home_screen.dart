@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/medication.dart';
-import '../providers/providers.dart';
-import '../widgets/medication_card.dart';
-import 'login_screen.dart';
+import 'package:medreminder/models/medication.dart';
+import 'package:medreminder/core/providers/providers.dart';
+import 'package:medreminder/widgets/medication_card.dart';
+import 'package:medreminder/features/auth/screens/login_screen.dart';
+import 'package:medreminder/features/interactions/screens/check_interaction_screen.dart';
+import 'package:medreminder/features/interactions/screens/interactions_screen.dart';
 import 'add_medication_screen.dart';
-import 'check_interaction_screen.dart';
-import 'interactions_screen.dart';
 import 'medication_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {

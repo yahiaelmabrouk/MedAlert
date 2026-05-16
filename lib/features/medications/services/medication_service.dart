@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/medication.dart';
+import 'package:medreminder/models/medication.dart';
 
 /// Saves and loads the user's medications using SharedPreferences.
 ///

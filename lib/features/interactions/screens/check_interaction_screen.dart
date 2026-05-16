@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/providers.dart';
+import 'package:medreminder/core/providers/providers.dart';
+import 'package:medreminder/widgets/severity_chip.dart';
+import '../services/drug_api_service.dart';
 import '../services/interaction_service.dart';
-import '../widgets/severity_chip.dart';
 
 class CheckInteractionScreen extends ConsumerStatefulWidget {
   const CheckInteractionScreen({super.key});
@@ -52,7 +53,9 @@ class _CheckInteractionScreenState
       if (!mounted) return;
       _showSimpleDialog(
         title: 'Check failed',
-        body: 'Could not complete the check.\n\n$e',
+        body: e is NetworkException
+            ? e.message
+            : 'Could not complete the check. Please try again.',
         icon: Icons.error_outline_rounded,
         color: Colors.red,
       );

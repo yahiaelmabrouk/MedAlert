@@ -16,6 +16,9 @@ migrate_working_dir/
 *.iws
 .idea/
 
+GOOGLE_CLOUD_SETUP_STEPS.md
+GOOGLE_CREDENTIALS_REFERENCE.md
+GOOGLE_SSO_SETUP.md
 # VS Code
 .vscode/
 

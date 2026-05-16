@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/providers.dart';
-import 'home_screen.dart';
+import 'package:medreminder/core/providers/providers.dart';
+import 'package:medreminder/features/medications/screens/home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {

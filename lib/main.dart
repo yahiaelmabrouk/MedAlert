@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'providers/providers.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'services/notification_service.dart';
+import 'package:medreminder/core/providers/providers.dart';
+import 'package:medreminder/features/medications/screens/home_screen.dart';
+import 'package:medreminder/features/auth/screens/login_screen.dart';
+import 'package:medreminder/features/medications/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
