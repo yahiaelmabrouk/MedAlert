@@ -214,26 +214,27 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Widget _buildLiveWarning(ThemeData theme) {
+    final scheme = theme.colorScheme;
     return Container(
       margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFE5E5),
-        borderRadius: BorderRadius.circular(12),
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.warning_amber_rounded,
-                  color: Color(0xFFB3261E)),
-              SizedBox(width: 8),
+                  color: scheme.onErrorContainer),
+              const SizedBox(width: 8),
               Text(
                 'Possible interaction',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFB3261E),
+                  color: scheme.onErrorContainer,
                 ),
               ),
             ],
@@ -250,8 +251,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                   Expanded(
                     child: Text(
                       'With ${i.drugA == _nameCtrl.text.toLowerCase() ? i.drugB : i.drugA}: ${i.description}',
-                      style:
-                          const TextStyle(color: Color(0xFFB3261E)),
+                      style: TextStyle(color: scheme.onErrorContainer),
                     ),
                   ),
                 ],
